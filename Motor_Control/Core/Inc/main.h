@@ -65,16 +65,16 @@ void Error_Handler(void);
 #define RIGHT_ENC_B_GPIO_Port GPIOA
 #define LEFT_ENC_A_Pin GPIO_PIN_5
 #define LEFT_ENC_A_GPIO_Port GPIOA
-#define LEFT_PWM_Pin GPIO_PIN_6
-#define LEFT_PWM_GPIO_Port GPIOA
-#define LEFT_DIR_Pin GPIO_PIN_7
-#define LEFT_DIR_GPIO_Port GPIOA
+#define BW_LEFT_Pin GPIO_PIN_6
+#define BW_LEFT_GPIO_Port GPIOA
+#define FW_LEFT_Pin GPIO_PIN_7
+#define FW_LEFT_GPIO_Port GPIOA
 #define LEFT_ENC_B_Pin GPIO_PIN_3
 #define LEFT_ENC_B_GPIO_Port GPIOB
-#define RIGHT_PWM_Pin GPIO_PIN_6
-#define RIGHT_PWM_GPIO_Port GPIOB
-#define RIGHT_DIR_Pin GPIO_PIN_7
-#define RIGHT_DIR_GPIO_Port GPIOB
+#define BW_RIGHT_Pin GPIO_PIN_6
+#define BW_RIGHT_GPIO_Port GPIOB
+#define FW_RIGHT_Pin GPIO_PIN_7
+#define FW_RIGHT_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

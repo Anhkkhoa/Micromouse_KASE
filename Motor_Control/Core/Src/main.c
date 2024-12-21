@@ -64,31 +64,17 @@ static void MX_TIM4_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+//user-defined function prototype
+void LEFT_PWM_SET(int16_t, int16_t);
+void RIGHT_PWM_SET(int16_t, int16_t);
+
 volatile int32_t left_cnt = 0;
 volatile int32_t right_cnt = 0;
 
 volatile float left_spd = 0;
 volatile float right_spd = 0;
-// volatile tell compiler don't optimize and catching variable's value in register as it can change at any time
-//We using interrupt, polling mode can cause mis-count when both motor running at the same time, fix it later then
-//I gonna switch back use polling to update. As with encoder mode, STM32 have a counter register to store encoder increasement without mis_count it
+//Using polling rather interrupt. STM32 has its own counter register so won't be mis-count the tick and just need to update each 1us for spd calculation
 
-/*
-void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
-{
-	if(htim -> Instance == TIM2)
-	{
-		left_cnt = __HAL_TIM_GET_COUNTER(htim);
-		left_pos = (float)left_cnt / 617;
-	}
-	else if (htim -> Instance == TIM5)
-	{
-		right_cnt = __HAL_TIM_GET_COUNTER(htim);
-		right_pos = (float)right_cnt / 617;
-	}
-
-}
-*/
 /* USER CODE END 0 */
 
 /**
@@ -126,17 +112,12 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
-
-  //recommended initialize timer in this section
-  HAL_TIM_Base_Start_IT(&htim11);
-  HAL_TIM_Encoder_Start_IT(&htim2, TIM_CHANNEL_ALL); //Left encoder timer
-  HAL_TIM_Encoder_Start_IT(&htim5, TIM_CHANNEL_ALL); //Right encoder timer
   //Optional: Setting priority for Encoder NVIC in the future, this give higher priority and code run correctly when i have more interrupt in the future
 
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
-  /* USER CODE END 2 */
 
+
+
+  /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -145,12 +126,21 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  HAL_GPIO_WritePin(LEFT_DIR_GPIO_Port, LEFT_DIR_Pin, GPIO_PIN_SET);
-	  HAL_GPIO_WritePin(RIGHT_DIR_GPIO_Port, RIGHT_DIR_Pin, GPIO_PIN_SET);
-	  /*
-	  HAL_GPIO_WritePin(LEFT_DIR_GPIO_Port, LEFT_DIR_Pin, GPIO_PIN_RESET); set won't work, reset will
-	  HAL_GPIO_WritePin(RIGHT_DIR_GPIO_Port, RIGHT_DIR_Pin, GPIO_PIN_RESET); set won't work, reset will
-	  */
+	  LEFT_PWM_SET(6250,0);
+	  HAL_Delay(1000);
+
+	  LEFT_PWM_SET(0,6250);
+	  HAL_Delay(1000);
+
+	  LEFT_PWM_SET(0,0);
+
+	  RIGHT_PWM_SET(6250,0);
+	  HAL_Delay(1000);
+
+	  RIGHT_PWM_SET(0,6250);
+	  HAL_Delay(1000);
+
+	  RIGHT_PWM_SET(0,0);
   }
   /* USER CODE END 3 */
 }
@@ -245,6 +235,7 @@ static void MX_TIM2_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM2_Init 2 */
+  HAL_TIM_Encoder_Start_IT(&htim2, TIM_CHANNEL_ALL); //Left encoder timer
 
   /* USER CODE END TIM2_Init 2 */
 
@@ -295,14 +286,22 @@ static void MX_TIM3_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 50;
+  sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
   {
     Error_Handler();
   }
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE BEGIN TIM3_Init 2 */
+
+  //Starting PWM TIM3 Channel 1 & 2
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
 
   /* USER CODE END TIM3_Init 2 */
   HAL_TIM_MspPostInit(&htim3);
@@ -354,14 +353,22 @@ static void MX_TIM4_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 50;
+  sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
   {
     Error_Handler();
   }
+  if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE BEGIN TIM4_Init 2 */
+
+  //Starting PWM TIM4 PWM Channel 1 & 2
+  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
 
   /* USER CODE END TIM4_Init 2 */
   HAL_TIM_MspPostInit(&htim4);
@@ -412,6 +419,7 @@ static void MX_TIM5_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM5_Init 2 */
+  HAL_TIM_Encoder_Start_IT(&htim5, TIM_CHANNEL_ALL); //Right encoder timer
 
   /* USER CODE END TIM5_Init 2 */
 
@@ -443,7 +451,7 @@ static void MX_TIM11_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM11_Init 2 */
-
+  HAL_TIM_Base_Start_IT(&htim11);
   /* USER CODE END TIM11_Init 2 */
 
 }
@@ -455,7 +463,6 @@ static void MX_TIM11_Init(void)
   */
 static void MX_GPIO_Init(void)
 {
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
 /* USER CODE BEGIN MX_GPIO_Init_1 */
 /* USER CODE END MX_GPIO_Init_1 */
 
@@ -464,31 +471,15 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LEFT_DIR_GPIO_Port, LEFT_DIR_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(RIGHT_DIR_GPIO_Port, RIGHT_DIR_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin : LEFT_DIR_Pin */
-  GPIO_InitStruct.Pin = LEFT_DIR_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(LEFT_DIR_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : RIGHT_DIR_Pin */
-  GPIO_InitStruct.Pin = RIGHT_DIR_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(RIGHT_DIR_GPIO_Port, &GPIO_InitStruct);
-
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
+//Recommended put user define function in this section
+
+//Speed calculation
+/*
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	{
 		if (htim -> Instance == TIM11)
@@ -496,17 +487,32 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			left_cnt = __HAL_TIM_GET_COUNTER(&htim2);
 			right_cnt = __HAL_TIM_GET_COUNTER(&htim5);
 
-			/*
+
 			left_spd = ((float)left_cnt / 617.0f) * (2 * M_PI * 16); //speed in millimeter out of millisecond
 			right_spd = ((float)right_cnt / 617.0f) * (2 * M_PI * 16); //speed in millimeter out of millisecond
 
 
 			__HAL_TIM_SET_COUNTER(&htim2,0);
 			__HAL_TIM_SET_COUNTER(&htim5,0);
-			*/
-		}
 
+		}
 	}
+*/
+
+//Left Motor PWM Control
+void LEFT_PWM_SET (int16_t FW_duty, int16_t BW_duty)
+{
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, FW_duty);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, BW_duty);
+}
+
+// Right Motor PWM Control
+void RIGHT_PWM_SET (int16_t FW_duty, int16_t BW_duty)
+{
+	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, FW_duty);
+	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, BW_duty);
+}
+
 /* USER CODE END 4 */
 
 /**
